@@ -1,3 +1,11 @@
+"""Service-layer exceptions, kept independent of HTTP status codes and Telegram copy.
+
+API routes and bot handlers each catch these and translate them into
+whatever's appropriate for their surface — an HTTP 400 response, or a
+human-readable Telegram message.
+"""
+
+
 class ServiceError(Exception):
     """Base class for service-layer errors that API/bot handlers translate into user messages."""
 

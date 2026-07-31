@@ -1,3 +1,5 @@
+"""Household creation, invite codes, and joining."""
+
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -19,6 +21,19 @@ INVITE_CODE_TTL = timedelta(hours=24)
 
 
 def create_household(db: DBSession, *, name: str, creator: User) -> Household:
+    """Create a household and add its creator as the first member.
+
+    Args:
+        db: Database session.
+        name: Display name for the new household.
+        creator: The user creating the household; becomes its first member.
+
+    Returns:
+        The newly created `Household`.
+
+    Raises:
+        AlreadyInHouseholdError: If ``creator`` already belongs to a household.
+    """
     if creator.household_membership is not None:
         raise AlreadyInHouseholdError(f"User {creator.id} already belongs to a household")
 
@@ -36,6 +51,17 @@ def create_household(db: DBSession, *, name: str, creator: User) -> Household:
 def generate_invite_code(
     db: DBSession, *, household: Household, created_by: User
 ) -> HouseholdInviteCode:
+    """Generate a single-use, 24-hour invite code for a household.
+
+    Args:
+        db: Database session.
+        household: The household the code will grant membership to.
+        created_by: The household member generating the code.
+
+    Returns:
+        The newly created `HouseholdInviteCode`, with the shareable code
+        on its ``code`` attribute.
+    """
     invite = HouseholdInviteCode(
         code=generate_code(),
         household_id=household.id,
@@ -49,6 +75,22 @@ def generate_invite_code(
 
 
 def join_household(db: DBSession, *, code: str, user: User) -> HouseholdMembership:
+    """Redeem an invite code, adding a user to the household it grants access to.
+
+    Args:
+        db: Database session.
+        code: The invite code being redeemed.
+        user: The user joining the household.
+
+    Returns:
+        The newly created `HouseholdMembership`.
+
+    Raises:
+        AlreadyInHouseholdError: If ``user`` already belongs to a household.
+        InvalidCodeError: If no invite code matches ``code``.
+        CodeAlreadyConsumedError: If the code has already been redeemed.
+        CodeExpiredError: If the code is past its expiry.
+    """
     if user.household_membership is not None:
         raise AlreadyInHouseholdError(f"User {user.id} already belongs to a household")
 

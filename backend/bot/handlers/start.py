@@ -1,3 +1,5 @@
+"""The ``/start`` command: auto-registration on first contact."""
+
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -6,6 +8,12 @@ from app.services.user_service import get_or_create_user
 
 
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Register the sender if they're new, and prompt them on household setup.
+
+    Args:
+        update: The incoming Telegram update.
+        context: The handler context, used to send the reply.
+    """
     chat = update.effective_chat
     telegram_user = update.effective_user
     if chat is None or telegram_user is None:

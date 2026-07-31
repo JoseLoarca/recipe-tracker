@@ -1,3 +1,5 @@
+"""The ``recipes`` table: a submitted video and its extraction status."""
+
 import uuid
 from datetime import datetime
 
@@ -10,6 +12,32 @@ from app.db.base import Base
 
 
 class Recipe(Base):
+    """A recipe submission and its lifecycle through the extraction pipeline.
+
+    ``owner_user_id`` never changes once set; ``visibility`` is the sole
+    sharing switch (see `app.core.visibility`). The extracted ingredients,
+    steps, and macros live in their own tables (`Ingredient`, `Step`,
+    `RecipeMacros`), keeping this row itself lean.
+
+    Attributes:
+        id: Primary key.
+        owner_user_id: Whoever submitted the source link. Never changes.
+        household_id: The owner's household at creation time, if any —
+            denormalized here so household-visibility queries don't need a
+            join through `HouseholdMembership`.
+        visibility: Whether this recipe is visible only to its owner or to
+            the whole household.
+        name: The recipe's title, as extracted (editable afterwards).
+        source_url: The original video link.
+        status: Where this submission is in the processing pipeline.
+        failure_reason: A human-readable explanation, set only when
+            ``status`` is `RecipeStatus.FAILED`.
+        correlation_id: Ties every pipeline log line for this submission
+            together, from "received" through "saved" or "failed".
+        created_at: When the submission was received.
+        updated_at: When this row last changed.
+    """
+
     __tablename__ = "recipes"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

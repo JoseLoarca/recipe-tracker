@@ -1,3 +1,5 @@
+"""The ``auth_codes`` table: single-use codes for logging into the web UI."""
+
 import uuid
 from datetime import datetime
 
@@ -9,6 +11,21 @@ from app.db.base import Base
 
 
 class AuthCode(Base):
+    """A one-time code, bot-delivered, proving a browser belongs to a Telegram identity.
+
+    Exchanged for a `app.db.models.session.Session` via
+    `app.services.auth_code_service.verify_login_code`.
+
+    Attributes:
+        id: Primary key.
+        code: The short code sent to the user via Telegram DM.
+        user_id: The user this code authenticates.
+        expires_at: Codes are short-lived (10 minutes) so a leaked code
+            can't be used long after the fact.
+        consumed_at: When the code was redeemed, if it has been — codes
+            are single-use.
+    """
+
     __tablename__ = "auth_codes"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

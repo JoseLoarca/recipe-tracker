@@ -20,6 +20,14 @@ logger = logging.getLogger(__name__)
 
 
 def build_application(token: str) -> Application[Any, Any, Any, Any, Any, Any]:
+    """Build the Telegram `Application` with all command handlers registered.
+
+    Args:
+        token: The bot's Telegram API token.
+
+    Returns:
+        A configured `Application`, ready for `Application.run_polling`.
+    """
     application = Application.builder().token(token).build()
     application.add_handler(CommandHandler("start", handle_start))
     application.add_handler(CommandHandler("create_household", handle_create_household))
@@ -30,6 +38,7 @@ def build_application(token: str) -> Application[Any, Any, Any, Any, Any, Any]:
 
 
 def main() -> None:
+    """Start the bot's long-polling loop, or warn and exit if unconfigured."""
     settings = get_settings()
     if not settings.telegram_bot_token:
         logger.warning("TELEGRAM_BOT_TOKEN is not set — bot will not start.")

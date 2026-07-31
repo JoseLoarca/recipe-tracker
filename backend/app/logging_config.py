@@ -1,3 +1,5 @@
+"""Structured (JSON) logging setup, shared by the API, worker, and bot."""
+
 import logging
 import logging.config
 
@@ -5,6 +7,11 @@ from app.config import get_settings
 
 
 def configure_logging() -> None:
+    """Configure the root logger to emit single-line JSON to stdout.
+
+    Called once at process startup by each entrypoint (`app.main`,
+    `bot.main`, and — once built — the Celery worker).
+    """
     settings = get_settings()
     logging.config.dictConfig(
         {

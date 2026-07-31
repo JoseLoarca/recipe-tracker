@@ -1,3 +1,5 @@
+"""The ``ingredients`` table: one row per ingredient in a recipe."""
+
 import uuid
 
 from sqlalchemy import Enum, ForeignKey, Numeric, String
@@ -9,6 +11,24 @@ from app.db.base import Base
 
 
 class Ingredient(Base):
+    """One ingredient line, with its extracted quantity and macros.
+
+    Attributes:
+        id: Primary key.
+        recipe_id: The recipe this ingredient belongs to.
+        raw_text: The ingredient as originally extracted (e.g. "2lbs
+            chicken breast"), kept for reference alongside the parsed fields.
+        name: The parsed ingredient name (e.g. "chicken breast").
+        quantity: The parsed numeric quantity, if extractable.
+        unit: The parsed unit (e.g. "lbs", "cup"), if extractable.
+        calories: This ingredient's calories, given ``quantity``/``unit``.
+        protein_g: This ingredient's protein in grams.
+        carbs_g: This ingredient's carbohydrate in grams.
+        fat_g: This ingredient's fat in grams.
+        macro_source: Whether these macros are USDA-verified or LLM-estimated.
+        sort_order: Preserves the ingredient list's original order.
+    """
+
     __tablename__ = "ingredients"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
