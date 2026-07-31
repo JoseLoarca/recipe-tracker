@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     usda_api_key: str = ""
     internal_api_key: str = "change-me"
     session_cookie_name: str = "recipe_tracker_session"
+    # Off by default: this stack serves plain HTTP with no TLS termination out of the
+    # box (see docs/setup.md). Flip to true only once you've put HTTPS in front of it
+    # (e.g. a reverse proxy or Tailscale HTTPS) — otherwise browsers silently drop the
+    # cookie and login appears broken.
+    session_cookie_secure: bool = False
     log_level: str = "INFO"
 
 

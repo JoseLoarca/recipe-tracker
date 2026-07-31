@@ -5,14 +5,21 @@ This started as a personal project, but pull requests are welcome if you're runn
 ## Development setup
 
 **Backend**
+
+Some tests touch a real Postgres database (see PLAN.md §8 — DB-backed service logic is treated as fast/deterministic enough to unit-test directly, unlike the video pipeline). Start the database once before running them:
+
 ```bash
+docker compose up -d postgres redis  # published on 127.0.0.1:55432/56379 to avoid clashing with any local Postgres/Redis
+
 cd backend
 uv sync --all-groups
-uv run pytest
+DATABASE_URL="postgresql+psycopg://recipe_tracker:change-me@localhost:55432/recipe_tracker" uv run pytest
 uv run ruff check .
 uv run black --check .
 uv run mypy app bot
 ```
+
+Adjust the password in `DATABASE_URL` to match whatever's in your `.env`.
 
 **Frontend**
 ```bash
