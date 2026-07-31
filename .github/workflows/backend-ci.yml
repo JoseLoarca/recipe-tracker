@@ -18,8 +18,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9
       - run: uv sync --all-groups
       - run: uv run ruff check .
       - run: uv run black --check .
@@ -27,8 +27,8 @@ jobs:
   typecheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9
       - run: uv sync --all-groups
       - run: uv run mypy app bot
 
@@ -61,7 +61,7 @@ jobs:
       DATABASE_URL: postgresql+psycopg://recipe_tracker:recipe_tracker@localhost:5432/recipe_tracker_test
       REDIS_URL: redis://localhost:6379/0
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9
       - run: uv sync --all-groups
       - run: uv run pytest --cov=app --cov-report=xml
