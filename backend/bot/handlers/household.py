@@ -1,3 +1,5 @@
+"""The ``/create_household``, ``/join``, and ``/invite`` commands."""
+
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -14,6 +16,13 @@ from app.services.user_service import get_or_create_user
 
 
 async def handle_create_household(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Create a household for the sender, named from the command's arguments.
+
+    Args:
+        update: The incoming Telegram update; ``context.args`` holds the
+            household name.
+        context: The handler context, used to send the reply.
+    """
     chat = update.effective_chat
     telegram_user = update.effective_user
     if chat is None or telegram_user is None:
@@ -43,6 +52,13 @@ async def handle_create_household(update: Update, context: ContextTypes.DEFAULT_
 
 
 async def handle_join_household(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Join the sender to a household via the invite code in the command's arguments.
+
+    Args:
+        update: The incoming Telegram update; ``context.args[0]`` holds
+            the invite code.
+        context: The handler context, used to send the reply.
+    """
     chat = update.effective_chat
     telegram_user = update.effective_user
     if chat is None or telegram_user is None:
@@ -80,6 +96,12 @@ async def handle_join_household(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def handle_invite(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Generate a shareable invite code for the sender's household.
+
+    Args:
+        update: The incoming Telegram update.
+        context: The handler context, used to send the reply.
+    """
     chat = update.effective_chat
     telegram_user = update.effective_user
     if chat is None or telegram_user is None:

@@ -1,3 +1,5 @@
+"""The ``steps`` table: one row per instruction step in a recipe."""
+
 import uuid
 
 from sqlalchemy import ForeignKey, Text
@@ -8,6 +10,15 @@ from app.db.base import Base
 
 
 class Step(Base):
+    """One instruction step in a recipe's method.
+
+    Attributes:
+        id: Primary key.
+        recipe_id: The recipe this step belongs to.
+        step_number: This step's position, 1-indexed.
+        text: The instruction text.
+    """
+
     __tablename__ = "steps"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

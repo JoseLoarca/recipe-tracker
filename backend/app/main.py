@@ -1,3 +1,5 @@
+"""FastAPI application factory: configures logging and mounts routers."""
+
 from fastapi import FastAPI
 
 from app.api.routes import auth, health

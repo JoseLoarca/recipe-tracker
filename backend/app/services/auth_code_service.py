@@ -1,3 +1,5 @@
+"""Web login: issuing bot-delivered codes and exchanging them for sessions."""
+
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -14,6 +16,18 @@ SESSION_TTL = timedelta(days=30)
 
 
 def issue_login_code(db: DBSession, *, user: User) -> AuthCode:
+    """Generate a single-use, 10-minute login code for a user.
+
+    Called by the bot's ``/login`` handler, which DMs the resulting code
+    back to the user.
+
+    Args:
+        db: Database session.
+        user: The user requesting a web login code.
+
+    Returns:
+        The newly created `AuthCode`, with the code on its ``code`` attribute.
+    """
     auth_code = AuthCode(
         code=generate_code(),
         user_id=user.id,
@@ -26,6 +40,21 @@ def issue_login_code(db: DBSession, *, user: User) -> AuthCode:
 
 
 def verify_login_code(db: DBSession, *, code: str) -> Session:
+    """Redeem a login code, creating a new web session for its owner.
+
+    Args:
+        db: Database session.
+        code: The login code being redeemed.
+
+    Returns:
+        The newly created `Session`, with the cookie value on its
+        ``token`` attribute.
+
+    Raises:
+        InvalidCodeError: If no login code matches ``code``.
+        CodeAlreadyConsumedError: If the code has already been redeemed.
+        CodeExpiredError: If the code is past its expiry.
+    """
     auth_code = db.execute(select(AuthCode).where(AuthCode.code == code)).scalar_one_or_none()
     if auth_code is None:
         raise InvalidCodeError(f"No login code matching {code!r}")
@@ -50,6 +79,16 @@ def verify_login_code(db: DBSession, *, code: str) -> Session:
 
 
 def get_user_for_session_token(db: DBSession, *, token: str) -> User | None:
+    """Resolve a session cookie value to its user, if the session is still valid.
+
+    Args:
+        db: Database session.
+        token: The session cookie value.
+
+    Returns:
+        The `User` the session belongs to, or None if the token doesn't
+        match a session, or that session has expired.
+    """
     session = db.execute(select(Session).where(Session.token == token)).scalar_one_or_none()
     if session is None or is_expired(session.expires_at):
         return None
@@ -57,6 +96,12 @@ def get_user_for_session_token(db: DBSession, *, token: str) -> User | None:
 
 
 def delete_session(db: DBSession, *, token: str) -> None:
+    """Delete a session, if one matches the given token.
+
+    Args:
+        db: Database session.
+        token: The session cookie value to invalidate.
+    """
     session = db.execute(select(Session).where(Session.token == token)).scalar_one_or_none()
     if session is not None:
         db.delete(session)

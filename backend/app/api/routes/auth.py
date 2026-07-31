@@ -1,3 +1,5 @@
+"""Web login: exchanging a bot-delivered code for a session cookie."""
+
 from fastapi import APIRouter, HTTPException, Response, status
 
 from app.api.deps import CurrentUserDep, DbSessionDep, SessionTokenCookie
@@ -14,6 +16,19 @@ settings = get_settings()
 
 @router.post("/verify-code", response_model=UserRead)
 def verify_code(payload: VerifyCodeRequest, response: Response, db: DbSessionDep) -> User:
+    """Redeem a bot-delivered login code and start a web session.
+
+    Args:
+        payload: The submitted code.
+        response: Used to set the session cookie on success.
+        db: Database session (injected).
+
+    Returns:
+        The authenticated user.
+
+    Raises:
+        HTTPException: 400 if the code is unknown, already used, or expired.
+    """
     try:
         session = verify_login_code(db, code=payload.code)
     except InvalidCodeError as exc:
@@ -43,6 +58,16 @@ def verify_code(payload: VerifyCodeRequest, response: Response, db: DbSessionDep
 def logout(
     response: Response, db: DbSessionDep, session_token: SessionTokenCookie = None
 ) -> dict[str, str]:
+    """End the current web session and clear its cookie.
+
+    Args:
+        response: Used to clear the session cookie.
+        db: Database session (injected).
+        session_token: The session cookie value, if present (injected).
+
+    Returns:
+        A simple status payload confirming logout.
+    """
     if session_token is not None:
         delete_session(db, token=session_token)
     response.delete_cookie(settings.session_cookie_name)
@@ -51,4 +76,12 @@ def logout(
 
 @router.get("/me", response_model=UserRead)
 def me(current_user: CurrentUserDep) -> User:
+    """Return the currently authenticated user.
+
+    Args:
+        current_user: The authenticated user (injected).
+
+    Returns:
+        The authenticated user.
+    """
     return current_user

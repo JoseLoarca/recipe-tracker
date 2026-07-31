@@ -1,3 +1,5 @@
+"""Shared FastAPI dependencies: DB sessions and the current-user lookup."""
+
 from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException, status
@@ -15,6 +17,19 @@ SessionTokenCookie = Annotated[str | None, Cookie(alias=settings.session_cookie_
 
 
 def get_current_user(db: DbSessionDep, session_token: SessionTokenCookie = None) -> User:
+    """Resolve the authenticated user from the session cookie.
+
+    Args:
+        db: Database session (injected).
+        session_token: The session cookie value, if present (injected).
+
+    Returns:
+        The authenticated `User`.
+
+    Raises:
+        HTTPException: 401 if there's no cookie, or it doesn't match a
+            live session.
+    """
     if session_token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 

@@ -1,3 +1,5 @@
+"""The ``sessions`` table: backs the web UI's login cookie."""
+
 import uuid
 from datetime import datetime
 
@@ -9,6 +11,17 @@ from app.db.base import Base
 
 
 class Session(Base):
+    """A logged-in web session, created once an `AuthCode` is verified.
+
+    Attributes:
+        id: Primary key.
+        user_id: The authenticated user.
+        token: The opaque, random token stored in the session cookie.
+        created_at: When the session was created.
+        expires_at: Sessions last 30 days (see
+            `app.services.auth_code_service.SESSION_TTL`).
+    """
+
     __tablename__ = "sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

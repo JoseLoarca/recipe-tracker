@@ -1,3 +1,5 @@
+"""SQLAlchemy models, imported here so Alembic's autogenerate sees them on ``Base.metadata``."""
+
 from app.db.models.auth_code import AuthCode
 from app.db.models.household import Household
 from app.db.models.household_invite_code import HouseholdInviteCode
