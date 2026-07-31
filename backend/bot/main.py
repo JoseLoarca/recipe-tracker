@@ -1,16 +1,32 @@
 """Telegram bot entrypoint (long-polling).
 
-Placeholder for Milestone 1 scaffolding — registration, household, and
-submission handlers land in later milestones (see PLAN.md §11).
+Recipe-link submission and pipeline notifications land in a later milestone
+(see PLAN.md §11) — this wires up registration, household setup, and login.
 """
 
 import logging
+from typing import Any
+
+from telegram.ext import Application, CommandHandler
 
 from app.config import get_settings
 from app.logging_config import configure_logging
+from bot.handlers.household import handle_create_household, handle_invite, handle_join_household
+from bot.handlers.login import handle_login
+from bot.handlers.start import handle_start
 
 configure_logging()
 logger = logging.getLogger(__name__)
+
+
+def build_application(token: str) -> Application[Any, Any, Any, Any, Any, Any]:
+    application = Application.builder().token(token).build()
+    application.add_handler(CommandHandler("start", handle_start))
+    application.add_handler(CommandHandler("create_household", handle_create_household))
+    application.add_handler(CommandHandler("join", handle_join_household))
+    application.add_handler(CommandHandler("invite", handle_invite))
+    application.add_handler(CommandHandler("login", handle_login))
+    return application
 
 
 def main() -> None:
@@ -18,7 +34,10 @@ def main() -> None:
     if not settings.telegram_bot_token:
         logger.warning("TELEGRAM_BOT_TOKEN is not set — bot will not start.")
         return
-    logger.info("Bot scaffolding only — handlers not yet implemented.")
+
+    application = build_application(settings.telegram_bot_token)
+    logger.info("Starting Telegram bot (long polling)")
+    application.run_polling()
 
 
 if __name__ == "__main__":

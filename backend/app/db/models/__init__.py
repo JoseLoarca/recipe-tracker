@@ -6,6 +6,7 @@ from app.db.models.ingredient import Ingredient
 from app.db.models.recipe import Recipe
 from app.db.models.recipe_macros import RecipeMacros
 from app.db.models.recipe_tag import RecipeTag
+from app.db.models.session import Session
 from app.db.models.step import Step
 from app.db.models.tag import Tag
 from app.db.models.user import User
@@ -19,6 +20,7 @@ __all__ = [
     "Recipe",
     "RecipeMacros",
     "RecipeTag",
+    "Session",
     "Step",
     "Tag",
     "User",
