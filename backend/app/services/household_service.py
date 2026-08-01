@@ -43,6 +43,12 @@ def create_household(db: DBSession, *, name: str, creator: User) -> Household:
 
     membership = HouseholdMembership(user_id=creator.id, household_id=household.id)
     db.add(membership)
+    # Keep the in-memory object in sync: `creator.household_membership` was
+    # already lazy-loaded (as None) by the check above, and with
+    # expire_on_commit=False a bare commit() won't refresh that cached
+    # value — so a stale None would otherwise persist on this object for
+    # the rest of the session.
+    creator.household_membership = membership
     db.commit()
     db.refresh(household)
     return household
@@ -107,6 +113,36 @@ def join_household(db: DBSession, *, code: str, user: User) -> HouseholdMembersh
     membership = HouseholdMembership(user_id=user.id, household_id=invite.household_id)
     invite.consumed_by_user_id = user.id
     db.add(membership)
+    # See the equivalent comment in create_household: keeps the cached
+    # relationship value in sync after the check above lazy-loaded it.
+    user.household_membership = membership
     db.commit()
     db.refresh(membership)
     return membership
+
+
+def get_household_with_members(db: DBSession, *, user: User) -> tuple[Household | None, list[User]]:
+    """Look up a user's household and its full member list.
+
+    Args:
+        db: Database session.
+        user: The user whose household is being looked up.
+
+    Returns:
+        A tuple of ``(household, members)``. Both are empty/None if the
+        user doesn't belong to a household.
+    """
+    if user.household_membership is None:
+        return None, []
+
+    household = db.get(Household, user.household_membership.household_id)
+    members = (
+        db.execute(
+            select(User)
+            .join(HouseholdMembership, HouseholdMembership.user_id == User.id)
+            .where(HouseholdMembership.household_id == user.household_membership.household_id)
+        )
+        .scalars()
+        .all()
+    )
+    return household, list(members)

@@ -24,3 +24,11 @@ class CodeExpiredError(ServiceError):
 
 class AlreadyInHouseholdError(ServiceError):
     """The user already belongs to a household and cannot join or create another."""
+
+
+class NotAuthorizedError(ServiceError):
+    """The user isn't allowed to perform this action on this resource."""
+
+
+class NoHouseholdError(ServiceError):
+    """The action requires a household the user doesn't have."""
