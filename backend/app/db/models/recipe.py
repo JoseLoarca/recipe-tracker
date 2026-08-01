@@ -2,13 +2,21 @@
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.enums import RecipeStatus, RecipeVisibility
 from app.db.base import Base
+from app.db.models.recipe_tag import RecipeTag
+
+if TYPE_CHECKING:
+    from app.db.models.ingredient import Ingredient
+    from app.db.models.recipe_macros import RecipeMacros
+    from app.db.models.step import Step
+    from app.db.models.tag import Tag
 
 
 class Recipe(Base):
@@ -36,6 +44,10 @@ class Recipe(Base):
             together, from "received" through "saved" or "failed".
         created_at: When the submission was received.
         updated_at: When this row last changed.
+        steps: This recipe's instruction steps, ordered by `Step.step_number`.
+        ingredients: This recipe's ingredients, ordered by `Ingredient.sort_order`.
+        macros: This recipe's aggregate per-portion macros, if computed.
+        tags: This recipe's tags.
     """
 
     __tablename__ = "recipes"
@@ -61,3 +73,12 @@ class Recipe(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+    steps: Mapped[list[Step]] = relationship(
+        order_by="Step.step_number", cascade="all, delete-orphan"
+    )
+    ingredients: Mapped[list[Ingredient]] = relationship(
+        order_by="Ingredient.sort_order", cascade="all, delete-orphan"
+    )
+    macros: Mapped[RecipeMacros | None] = relationship(uselist=False, cascade="all, delete-orphan")
+    tags: Mapped[list[Tag]] = relationship(secondary=RecipeTag.__table__)
