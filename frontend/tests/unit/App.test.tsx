@@ -1,10 +1,21 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { MemoryRouter } from 'react-router'
+import { describe, expect, it, vi } from 'vitest'
 import App from '../../src/App'
+import { AuthProvider } from '../../src/context/AuthContext'
 
 describe('App', () => {
-  it('renders without crashing', () => {
-    render(<App />)
-    expect(screen.getByRole('heading', { name: /recipe tracker/i })).toBeInTheDocument()
+  it('renders the login page when not authenticated', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('not authenticated'))
+
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: /recipe tracker/i })).toBeInTheDocument()
   })
 })
