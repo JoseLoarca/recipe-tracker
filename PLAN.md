@@ -194,7 +194,9 @@ Retry policy: `autoretry_for` (Celery, max 2, exponential backoff) only on trans
 **Planned (Milestone 8+):** an internal-only endpoint for pipeline-created pending recipes, protected by a separate `X-Internal-Key` header, used only by the bot/worker, never the frontend.
 
 ## 7. Frontend
-Routes: `/login` (enter Telegram-delivered code), `/` (list), `/recipes/:id` (detail), `/recipes/:id/edit`. List page filters by tag + mine/household/all. Detail page shows `MacroBadge` (verified/estimated), `ShoppingList` (client-side checkable), source video link, owner-only `VisibilityToggle`. Edit page mirrors the backend validation schema. Plain REST/JSON via a thin fetch client (`credentials: 'include'` for the session cookie); no websockets for MVP — poll or manually refresh while a recipe is pending/processing. Not yet started (Milestone 5).
+Routes: `/login` (enter Telegram-delivered code), `/` (list), `/recipes/:id` (detail), `/recipes/:id/edit`. List page filters by tag + mine/household/all. Detail page shows `MacroBadge` (verified/estimated), `ShoppingList` (client-side checkable), source video link, owner-only `VisibilityToggle`. Edit page mirrors the backend validation schema. Plain REST/JSON via a thin fetch client (`credentials: 'include'` for the session cookie); no websockets for MVP — poll or manually refresh while a recipe is pending/processing.
+
+**Implemented (Milestone 5):** all four routes, wrapped in `AuthProvider` + `ProtectedRoute` (redirects to `/login` when the `GET /api/v1/auth/me` check fails). Uses [react-router](https://reactrouter.com) (not `react-router-dom` — as of v7 the DOM bindings live in the base package; `react-router-dom` is a legacy-compatible shim capped at v7, and the vulnerable-version advisory affecting 7.12–8.2 only applies to that shim, not the base package). Backend now runs `CORSMiddleware` (`CORS_ALLOWED_ORIGINS`, credentials allowed) since the frontend and API are different origins — a gap not caught until manual browser testing, since integration tests hit the API directly and never exercise the browser's CORS enforcement.
 
 ## 8. Testing Strategy
 | Layer | Tooling | Scope |
@@ -219,7 +221,7 @@ Coverage threshold enforced in CI on `app/core/` and `app/services/` specificall
 2. ✅ Data model + Alembic migration + `visibility.py` unit tests against real models.
 3. ✅ Bot auto-registration + household create/join (invite codes) + web login-code flow + session cookie, with integration tests covering the full registration→household→login chain.
 4. ✅ Recipe CRUD API against seeded/manual data (no pipeline yet) + shopping-list/macro-reconciliation unit tests.
-5. Frontend core pages wired to the real API.
+5. ✅ Frontend core pages wired to the real API.
 6. Celery pipeline skeleton with mocked stage bodies, correlation-id logging plumbing proven end-to-end.
 7. Real pipeline stages, one PR each: download → transcribe → extract (ollama-python client + schema validation) → USDA macros (+ fallback).
 8. End-to-end Telegram submission flow (bot → enqueue → notifier callbacks → human-readable failure copy).
@@ -233,6 +235,8 @@ Coverage threshold enforced in CI on `app/core/` and `app/services/` specificall
 - **Retry behavior →** automatic retry (max 2, backoff) only for transient stages (download, USDA lookup); transcription/extraction failures require manual resend since they're likely deterministic. Documented in README and in the bot's failure-message copy.
 - **Session cookie `Secure` flag →** configurable, default `false` (see §6) — a real bug caught during Milestone 3: a hardcoded `Secure` cookie is silently dropped by browsers over plain HTTP, which is what this stack serves by default.
 - **SQLAlchemy relationship caching →** a real bug caught during Milestone 4: `household_service.create_household`/`join_household` check `user.household_membership is None` before creating the membership, which lazy-loads (and caches) `None` on that attribute. With `expire_on_commit=False` (needed so the bot/API don't refetch objects after every commit), that stale `None` never refreshes — so creating a household-visible recipe in the same request/session right after joining a household would incorrectly fail. Fixed by explicitly assigning `user.household_membership = membership` in-memory right after creating it, rather than relying on SQLAlchemy to notice.
+- **CORS →** a real gap caught during Milestone 5's manual browser verification (not by any automated test, since integration tests call the FastAPI app in-process and never go through an actual browser's CORS enforcement): the frontend and backend are different origins in dev (`:8080` vs `:8000`), and with no `CORSMiddleware` configured, every credentialed fetch from the browser would have silently failed. Fixed by adding `CORSMiddleware` with `CORS_ALLOWED_ORIGINS` (credentials allowed) — worth remembering that backend integration tests can't catch browser-enforced policies like CORS or cookie `SameSite`/`Secure` behavior; those need an actual browser pass.
+- **Flexbox + `select { width: 100% }` →** a real CSS bug caught during the same manual pass: a `<select>` with `width: 100%` and `flex-basis: auto` inside a flex row resolves its flex-basis from that 100% width, so it claims the entire row and squeezes sibling flex items (an ingredient text input) down to ~0. Fixed by not defaulting `<select>` to full width globally — only `input`/`textarea` get that default, with per-context overrides for tag-filter/ingredient-row selects.
 
 ## Verification
 - `docker compose up -d` brings up postgres/redis/backend/worker/bot/frontend cleanly with all healthchecks green (Ollama running natively beforehand).

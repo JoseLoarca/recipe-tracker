@@ -26,6 +26,9 @@ class Settings(BaseSettings):
             only once you've put HTTPS in front of it (e.g. a reverse
             proxy or Tailscale HTTPS) — otherwise browsers silently drop
             the cookie and login appears broken.
+        cors_allowed_origins: Where the frontend is served from, so the
+            browser will allow it to call this API with credentials
+            (cookies). Comma-separated for more than one origin.
         log_level: Root logger level (e.g. ``"INFO"``, ``"DEBUG"``).
     """
 
@@ -41,7 +44,17 @@ class Settings(BaseSettings):
     internal_api_key: str = "change-me"
     session_cookie_name: str = "recipe_tracker_session"
     session_cookie_secure: bool = False
+    cors_allowed_origins: str = "http://localhost:8080"
     log_level: str = "INFO"
+
+    @property
+    def cors_allowed_origins_list(self) -> list[str]:
+        """Parse ``cors_allowed_origins`` into a list for CORSMiddleware.
+
+        Returns:
+            The configured origins, split on commas and trimmed.
+        """
+        return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
 
 
 @lru_cache
