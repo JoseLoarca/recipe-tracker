@@ -26,7 +26,7 @@ cp .env.example .env
 Edit `.env`:
 - `TELEGRAM_BOT_TOKEN` — from BotFather
 - `USDA_API_KEY` — from FoodData Central
-- `POSTGRES_PASSWORD` / `INTERNAL_API_KEY` — replace the placeholder values with your own random strings
+- `POSTGRES_PASSWORD` — replace the placeholder value with your own random string
 - `OLLAMA_BASE_URL` — leave as `http://host.docker.internal:11434` on macOS/Windows; on Linux this also usually works via the `extra_hosts` entry already in `docker-compose.yml`, but if it doesn't resolve, use your Docker bridge address (commonly `http://172.17.0.1:11434`)
 
 ## 3. Run

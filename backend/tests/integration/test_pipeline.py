@@ -88,11 +88,13 @@ def test_pipeline_success_path_persists_the_recipe(real_session: Session) -> Non
             patch("app.worker.tasks.transcribe_audio", return_value="mock transcript"),
             patch("app.worker.tasks.extract_recipe", return_value=_EXTRACTED_RECIPE),
             patch("app.worker.tasks.lookup_macros", return_value=_RESOLVED_INGREDIENTS),
+            patch("app.worker.tasks.notify_success") as mock_notify_success,
         ):
             process_recipe_submission(
                 recipe_id=str(recipe.id),
                 source_url=recipe.source_url,
                 correlation_id=str(recipe.correlation_id),
+                chat_id="pipeline-test-1",
             )
 
         real_session.expire_all()
@@ -106,6 +108,9 @@ def test_pipeline_success_path_persists_the_recipe(real_session: Session) -> Non
         assert saved.macros is not None
         assert saved.macros.macro_source == "usda_verified"
         assert {tag.name for tag in saved.tags} == {"dinner", "meal-prep"}
+        mock_notify_success.assert_called_once_with(
+            chat_id="pipeline-test-1", recipe_name="Chicken and Quinoa Bowl", recipe_id=recipe.id
+        )
     finally:
         real_session.delete(real_session.get(Recipe, recipe.id))
         real_session.commit()
@@ -125,18 +130,22 @@ def test_pipeline_failure_path_marks_the_recipe_failed(real_session: Session) ->
     )
 
     try:
-        with patch(
-            "app.worker.tasks.download_audio",
-            side_effect=PipelineStageError(
-                stage="download",
-                input_summary=recipe.source_url,
-                human_message="This video is private or unavailable.",
+        with (
+            patch(
+                "app.worker.tasks.download_audio",
+                side_effect=PipelineStageError(
+                    stage="download",
+                    input_summary=recipe.source_url,
+                    human_message="This video is private or unavailable.",
+                ),
             ),
+            patch("app.worker.tasks.notify_failure") as mock_notify_failure,
         ):
             process_recipe_submission(
                 recipe_id=str(recipe.id),
                 source_url=recipe.source_url,
                 correlation_id=str(recipe.correlation_id),
+                chat_id="pipeline-test-2",
             )
 
         real_session.expire_all()
@@ -150,6 +159,9 @@ def test_pipeline_failure_path_marks_the_recipe_failed(real_session: Session) ->
         assert len(saved.steps) == 0
         assert len(saved.ingredients) == 0
         assert saved.macros is None
+        mock_notify_failure.assert_called_once_with(
+            chat_id="pipeline-test-2", failure_reason="This video is private or unavailable."
+        )
     finally:
         real_session.delete(real_session.get(Recipe, recipe.id))
         real_session.commit()
@@ -177,11 +189,13 @@ def test_pipeline_logs_include_the_correlation_id(
             patch("app.worker.tasks.transcribe_audio", return_value="mock transcript"),
             patch("app.worker.tasks.extract_recipe", return_value=_EXTRACTED_RECIPE),
             patch("app.worker.tasks.lookup_macros", return_value=_RESOLVED_INGREDIENTS),
+            patch("app.worker.tasks.notify_success"),
         ):
             process_recipe_submission(
                 recipe_id=str(recipe.id),
                 source_url=recipe.source_url,
                 correlation_id=str(recipe.correlation_id),
+                chat_id="pipeline-test-3",
             )
 
         assert any(

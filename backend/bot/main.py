@@ -1,19 +1,16 @@
-"""Telegram bot entrypoint (long-polling).
-
-Recipe-link submission and pipeline notifications land in a later milestone
-(see PLAN.md §11) — this wires up registration, household setup, and login.
-"""
+"""Telegram bot entrypoint (long-polling)."""
 
 import logging
 from typing import Any
 
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from app.config import get_settings
 from app.logging_config import configure_logging
 from bot.handlers.household import handle_create_household, handle_invite, handle_join_household
 from bot.handlers.login import handle_login
 from bot.handlers.start import handle_start
+from bot.handlers.submit import handle_submit
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -34,6 +31,7 @@ def build_application(token: str) -> Application[Any, Any, Any, Any, Any, Any]:
     application.add_handler(CommandHandler("join", handle_join_household))
     application.add_handler(CommandHandler("invite", handle_invite))
     application.add_handler(CommandHandler("login", handle_login))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_submit))
     return application
 
 
