@@ -3,7 +3,7 @@
 Turn a YouTube Shorts recipe link into a structured, searchable recipe — ingredients, steps, macros, and a shopping 
 list — by sending the link to a Telegram bot. Runs entirely on free, self-hosted infrastructure.
 
-> **Status:** early scaffolding (Milestone 1 of the build plan). Core capture/pipeline features are not yet implemented — see [Roadmap](#roadmap--non-goals) below.
+> **Status:** feature-complete for MVP (Milestone 8 of 10 — see [PLAN.md](PLAN.md) §11). The full capture → extraction → web UI loop works end to end; remaining work is docs/polish and hardening.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -41,9 +41,13 @@ See [docs/architecture.md](docs/architecture.md) for a full breakdown of the pip
 
 ## Screenshots
 
-<!-- screenshot: recipe list, mobile + desktop -->
-<!-- screenshot: recipe detail with macros and shopping list -->
-<!-- gif: telegram submit -> bot ack -> completion message -->
+| Recipe list (desktop) | Recipe list (mobile) |
+|---|---|
+| ![Recipe list, desktop](docs/screenshots/recipe-list-desktop.png) | ![Recipe list, mobile](docs/screenshots/recipe-list-mobile.png) |
+
+**Recipe detail**, with verified/estimated macros and a checkable shopping list:
+
+![Recipe detail with macros and shopping list](docs/screenshots/recipe-detail.png)
 
 ## Tech Stack
 
