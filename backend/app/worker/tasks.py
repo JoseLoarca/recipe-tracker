@@ -1,9 +1,7 @@
 """The Celery task orchestrating the video-to-recipe pipeline.
 
-Each stage in `app.worker.pipeline` is still mocked as of Milestone 6
-(see PLAN.md §11) — this task proves the orchestration, correlation-ID
-logging, and success/failure persistence work end-to-end before the real
-yt-dlp/faster-whisper/Ollama/USDA integrations land in Milestone 7.
+Runs the real yt-dlp/faster-whisper/Ollama/USDA stages in `app.worker.pipeline`
+(see PLAN.md §11) inside a correlation-ID-bound logging context.
 """
 
 import logging
