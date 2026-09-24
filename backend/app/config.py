@@ -15,6 +15,11 @@ class Settings(BaseSettings):
         redis_url: Connection string for the Celery broker/result backend.
         ollama_base_url: Where the worker reaches the host-native Ollama
             instance (see docs/adr/0004).
+        ollama_model: Which local model to use for recipe extraction and
+            macro estimation.
+        whisper_model_size: Which faster-whisper model size to load for
+            transcription (e.g. ``"base"``, ``"small"``) — bigger is more
+            accurate but slower and more memory-hungry.
         telegram_bot_token: This instance's bot token, from @BotFather.
         usda_api_key: API key for USDA FoodData Central macro lookups.
         internal_api_key: Shared secret between the bot/worker and the
@@ -39,6 +44,8 @@ class Settings(BaseSettings):
     )
     redis_url: str = "redis://redis:6379/0"
     ollama_base_url: str = "http://host.docker.internal:11434"
+    ollama_model: str = "gemma4:e4b-mlx"
+    whisper_model_size: str = "base"
     telegram_bot_token: str = ""
     usda_api_key: str = ""
     internal_api_key: str = "change-me"
