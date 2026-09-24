@@ -29,7 +29,7 @@ _EAGER_LOAD = (
 )
 
 
-def _get_or_create_tags(db: DBSession, names: list[str]) -> list[Tag]:
+def get_or_create_tags(db: DBSession, names: list[str]) -> list[Tag]:
     """Resolve tag names to `Tag` rows, creating any that don't exist yet.
 
     Args:
@@ -114,6 +114,44 @@ def _current_portion_count(recipe: Recipe) -> int:
     return recipe.macros.portion_count if recipe.macros is not None else 1
 
 
+def create_pending_recipe(
+    db: DBSession, *, owner: User, source_url: str, correlation_id: uuid.UUID
+) -> Recipe:
+    """Create a placeholder recipe row for a submission entering the pipeline.
+
+    Has no name/steps/ingredients yet — those are filled in by the
+    pipeline's persist stage once extraction succeeds (see
+    `app.worker.pipeline.persist`). Used by the bot's submission handler
+    (Milestone 8) to give the pipeline something to work on immediately,
+    before any processing has happened.
+
+    Args:
+        db: Database session.
+        owner: The user submitting the link; becomes the recipe's owner.
+        source_url: The submitted video link.
+        correlation_id: Ties this recipe to its pipeline run's log lines.
+
+    Returns:
+        The newly created `Recipe`, with `RecipeStatus.PENDING`.
+    """
+    household_id = (
+        owner.household_membership.household_id if owner.household_membership is not None else None
+    )
+    recipe = Recipe(
+        owner_user_id=owner.id,
+        household_id=household_id,
+        visibility=RecipeVisibility.PERSONAL,
+        name="",
+        source_url=source_url,
+        status=RecipeStatus.PENDING,
+        correlation_id=correlation_id,
+    )
+    db.add(recipe)
+    db.commit()
+    db.refresh(recipe)
+    return recipe
+
+
 def create_recipe(db: DBSession, *, owner: User, data: RecipeCreate) -> Recipe:
     """Create a recipe with its steps, ingredients, macros, and tags.
 
@@ -148,7 +186,7 @@ def create_recipe(db: DBSession, *, owner: User, data: RecipeCreate) -> Recipe:
         status=RecipeStatus.COMPLETE,
         correlation_id=uuid.uuid4(),
         steps=[Step(step_number=i + 1, text=text) for i, text in enumerate(data.steps)],
-        tags=_get_or_create_tags(db, data.tags),
+        tags=get_or_create_tags(db, data.tags),
     )
     db.add(recipe)
     _apply_ingredients(recipe, data.ingredients, portion_count=data.portion_count)
@@ -241,7 +279,7 @@ def update_recipe(
     if data.steps is not None:
         recipe.steps = [Step(step_number=i + 1, text=text) for i, text in enumerate(data.steps)]
     if data.tags is not None:
-        recipe.tags = _get_or_create_tags(db, data.tags)
+        recipe.tags = get_or_create_tags(db, data.tags)
 
     new_portion_count = (
         data.portion_count if data.portion_count is not None else _current_portion_count(recipe)
