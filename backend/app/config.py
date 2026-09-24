@@ -22,8 +22,8 @@ class Settings(BaseSettings):
             accurate but slower and more memory-hungry.
         telegram_bot_token: This instance's bot token, from @BotFather.
         usda_api_key: API key for USDA FoodData Central macro lookups.
-        internal_api_key: Shared secret between the bot/worker and the
-            backend API, for endpoints the frontend should never call.
+        frontend_base_url: Where the web UI is served from, used to build
+            recipe links in the bot's completion notifications.
         session_cookie_name: Name of the web UI's session cookie.
         session_cookie_secure: Whether the session cookie requires HTTPS.
             Off by default: this stack serves plain HTTP with no TLS
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     whisper_model_size: str = "base"
     telegram_bot_token: str = ""
     usda_api_key: str = ""
-    internal_api_key: str = "change-me"
+    frontend_base_url: str = "http://localhost:8080"
     session_cookie_name: str = "recipe_tracker_session"
     session_cookie_secure: bool = False
     cors_allowed_origins: str = "http://localhost:8080"

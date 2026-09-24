@@ -76,7 +76,7 @@ See [docs/architecture.md](docs/architecture.md) for a full breakdown of the pip
 
 ```bash
 cp .env.example .env
-# edit .env: set TELEGRAM_BOT_TOKEN, USDA_API_KEY, and a real INTERNAL_API_KEY/POSTGRES_PASSWORD
+# edit .env: set TELEGRAM_BOT_TOKEN, USDA_API_KEY, and a real POSTGRES_PASSWORD
 
 docker compose up -d
 ```

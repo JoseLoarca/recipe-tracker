@@ -16,12 +16,15 @@ from app.worker.pipeline.extract import extract_recipe
 from app.worker.pipeline.macros import lookup_macros
 from app.worker.pipeline.persist import mark_recipe_failed, persist_recipe
 from app.worker.pipeline.transcribe import transcribe_audio
+from bot.notifier import notify_failure, notify_success
 
 logger = logging.getLogger(__name__)
 
 
 @celery_app.task(name="process_recipe_submission")  # type: ignore[untyped-decorator]
-def process_recipe_submission(recipe_id: str, source_url: str, correlation_id: str) -> None:
+def process_recipe_submission(
+    recipe_id: str, source_url: str, correlation_id: str, chat_id: str
+) -> None:
     """Run one recipe submission through the full extraction pipeline.
 
     Runs each stage in sequence — download, transcribe, extract, macro
@@ -29,12 +32,14 @@ def process_recipe_submission(recipe_id: str, source_url: str, correlation_id: s
     every log line for this submission can be found by its correlation ID
     alone. On any stage's `PipelineStageError`, the recipe is marked
     failed with a human-readable reason instead; no partial data is ever
-    saved.
+    saved. Either way, the submitter is notified via `bot.notifier`.
 
     Args:
         recipe_id: Primary key of the pending `Recipe` row to fill in.
         source_url: The submitted video link.
         correlation_id: Ties this run's log lines together.
+        chat_id: The submitter's Telegram chat id, for the completion
+            notification.
     """
     with bind_pipeline_context(correlation_id=correlation_id, recipe_id=recipe_id):
         logger.info("Pipeline started")
@@ -56,6 +61,7 @@ def process_recipe_submission(recipe_id: str, source_url: str, correlation_id: s
                 mark_recipe_failed(
                     db, recipe_id=uuid.UUID(recipe_id), failure_reason=exc.human_message
                 )
+            notify_failure(chat_id=chat_id, failure_reason=exc.human_message)
             return
 
         with SessionLocal() as db:
@@ -66,3 +72,4 @@ def process_recipe_submission(recipe_id: str, source_url: str, correlation_id: s
                 resolved_ingredients=resolved_ingredients,
             )
         logger.info("Pipeline completed")
+        notify_success(chat_id=chat_id, recipe_name=extracted.name, recipe_id=uuid.UUID(recipe_id))
