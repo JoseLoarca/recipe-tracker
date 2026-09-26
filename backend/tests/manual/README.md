@@ -4,6 +4,7 @@ Anything that hits real yt-dlp downloads, real faster-whisper inference, or real
 
 - [ ] Send a supported link → immediate "Queued! Ref: ..." ack, then (once processing finishes) a separate "Done! `<name>` is ready: `<link>`" message with a working link into the web UI.
 - [ ] Send an unrelated text message (not a link) → bot stays silent, no reply, no recipe created.
+- [ ] `/leave_household` after sharing a recipe → confirmation reply, and the recipe reverts to personal in the web UI immediately.
 - [ ] Normal case: a typical narrated recipe Short → produces a complete recipe with plausible ingredients/steps/macros.
 - [ ] Private video link → bot replies with a clear "private or unavailable" failure message, no partial recipe saved.
 - [ ] Region-locked video link → same, region-specific failure message.

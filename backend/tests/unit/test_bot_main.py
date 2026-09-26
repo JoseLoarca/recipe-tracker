@@ -12,7 +12,7 @@ def test_build_application_registers_all_handlers() -> None:
     command_handlers = [h for h in handlers if isinstance(h, CommandHandler)]
     message_handlers = [h for h in handlers if isinstance(h, MessageHandler)]
 
-    assert len(command_handlers) == 5
+    assert len(command_handlers) == 6
     assert len(message_handlers) == 1
 
 

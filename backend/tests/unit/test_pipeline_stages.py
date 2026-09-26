@@ -65,6 +65,26 @@ class TestDownloadAudio:
             download_audio("https://youtube.com/shorts/flaky")
         assert exc_info.value.stage == "download"
 
+    @patch("app.core.retry.time.sleep")
+    @patch("app.worker.pipeline.download.get_settings")
+    @patch("app.worker.pipeline.download.yt_dlp.YoutubeDL")
+    def test_respects_configured_retry_max_attempts(
+        self,
+        mock_ydl_cls: MagicMock,
+        mock_get_settings: MagicMock,
+        _mock_sleep: MagicMock,
+    ) -> None:
+        mock_get_settings.return_value.pipeline_retry_max_attempts = 1
+        mock_get_settings.return_value.pipeline_retry_base_delay_seconds = 1.0
+        mock_ydl_cls.return_value.__enter__.return_value.extract_info.side_effect = (
+            yt_dlp.utils.DownloadError("ERROR: Network unreachable")
+        )
+
+        with pytest.raises(PipelineStageError):
+            download_audio("https://youtube.com/shorts/flaky")
+
+        assert mock_ydl_cls.return_value.__enter__.return_value.extract_info.call_count == 1
+
 
 class TestTranscribeAudio:
     @patch("app.worker.pipeline.transcribe._get_model")
@@ -201,3 +221,21 @@ class TestUsdaClient:
 
         with patch("app.services.usda_client.httpx.get", side_effect=httpx.ConnectError("down")):
             assert lookup_food_macros("chicken breast") is None
+
+    @patch("app.core.retry.time.sleep")
+    @patch("app.services.usda_client.get_settings")
+    def test_respects_configured_retry_max_attempts(
+        self, mock_get_settings: MagicMock, _mock_sleep: MagicMock
+    ) -> None:
+        from app.services.usda_client import lookup_food_macros
+
+        mock_get_settings.return_value.pipeline_retry_max_attempts = 1
+        mock_get_settings.return_value.pipeline_retry_base_delay_seconds = 1.0
+        mock_get_settings.return_value.usda_api_key = "test-key"
+
+        with patch(
+            "app.services.usda_client.httpx.get", side_effect=httpx.ConnectError("down")
+        ) as mock_get:
+            assert lookup_food_macros("chicken breast") is None
+
+        assert mock_get.call_count == 1
