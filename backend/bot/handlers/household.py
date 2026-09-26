@@ -1,4 +1,4 @@
-"""The ``/create_household``, ``/join``, and ``/invite`` commands."""
+"""The ``/create_household``, ``/join``, ``/invite``, and ``/leave_household`` commands."""
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -8,10 +8,16 @@ from app.core.exceptions import (
     CodeAlreadyConsumedError,
     CodeExpiredError,
     InvalidCodeError,
+    NoHouseholdError,
 )
 from app.db.models.household import Household
 from app.db.session import SessionLocal
-from app.services.household_service import create_household, generate_invite_code, join_household
+from app.services.household_service import (
+    create_household,
+    generate_invite_code,
+    join_household,
+    leave_household,
+)
 from app.services.user_service import get_or_create_user
 
 
@@ -127,4 +133,38 @@ async def handle_invite(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         chat_id=chat.id,
         text=f"Invite code: {invite.code}\nShare it with your household member — "
         "it expires in 24 hours.",
+    )
+
+
+async def handle_leave_household(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Remove the sender from their household.
+
+    Any of the sender's own recipes marked household-visible revert to
+    personal — a privacy fail-safe so they don't stay shared with people
+    no longer in the same household (see PLAN.md §12).
+
+    Args:
+        update: The incoming Telegram update.
+        context: The handler context, used to send the reply.
+    """
+    chat = update.effective_chat
+    telegram_user = update.effective_user
+    if chat is None or telegram_user is None:
+        return
+
+    with SessionLocal() as db:
+        user, _ = get_or_create_user(
+            db,
+            telegram_chat_id=str(chat.id),
+            display_name=telegram_user.full_name or "there",
+        )
+        try:
+            leave_household(db, user=user)
+        except NoHouseholdError:
+            await context.bot.send_message(chat_id=chat.id, text="You're not in a household.")
+            return
+
+    await context.bot.send_message(
+        chat_id=chat.id,
+        text="You've left your household. Any recipes you'd shared with it are personal again.",
     )

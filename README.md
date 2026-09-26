@@ -3,7 +3,7 @@
 Turn a YouTube Shorts recipe link into a structured, searchable recipe — ingredients, steps, macros, and a shopping 
 list — by sending the link to a Telegram bot. Runs entirely on free, self-hosted infrastructure.
 
-> **Status:** feature-complete for MVP (Milestone 8 of 10 — see [PLAN.md](PLAN.md) §11). The full capture → extraction → web UI loop works end to end; remaining work is docs/polish and hardening.
+> **Status:** MVP complete (all 10 milestones — see [PLAN.md](PLAN.md) §11). The full capture → extraction → web UI loop works end to end, with docs, coverage gates, and hardening (configurable retry/backoff, log rotation, household-leave edge case) all in place.
 
 ## Table of Contents
 - [Overview](#overview)

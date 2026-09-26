@@ -51,8 +51,8 @@ def configure_logging() -> None:
                     "formatter": "json",
                     "filters": ["pipeline_context"],
                     "filename": LOG_FILE_PATH,
-                    "maxBytes": 10_000_000,
-                    "backupCount": 5,
+                    "maxBytes": settings.log_max_bytes,
+                    "backupCount": settings.log_backup_count,
                 },
             },
             "root": {

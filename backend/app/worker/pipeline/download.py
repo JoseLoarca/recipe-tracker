@@ -5,6 +5,7 @@ import uuid
 
 import yt_dlp
 
+from app.config import get_settings
 from app.core.retry import retry_with_backoff
 from app.worker.pipeline.errors import PipelineStageError
 
@@ -80,8 +81,14 @@ def download_audio(source_url: str) -> str:
             raise
         return audio_path
 
+    settings = get_settings()
     try:
-        return retry_with_backoff(attempt, retry_on=yt_dlp.utils.DownloadError)
+        return retry_with_backoff(
+            attempt,
+            max_attempts=settings.pipeline_retry_max_attempts,
+            base_delay_seconds=settings.pipeline_retry_base_delay_seconds,
+            retry_on=yt_dlp.utils.DownloadError,
+        )
     except yt_dlp.utils.DownloadError as exc:
         raise PipelineStageError(
             stage="download",

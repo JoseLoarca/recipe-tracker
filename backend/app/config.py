@@ -35,6 +35,14 @@ class Settings(BaseSettings):
             browser will allow it to call this API with credentials
             (cookies). Comma-separated for more than one origin.
         log_level: Root logger level (e.g. ``"INFO"``, ``"DEBUG"``).
+        log_max_bytes: Rotate ``logs/pipeline.log`` once it reaches this size.
+        log_backup_count: How many rotated log files to keep before the
+            oldest is deleted.
+        pipeline_retry_max_attempts: Total attempts (including the first)
+            for the pipeline's transient stages (download, USDA lookup)
+            before giving up — see `app.core.retry`.
+        pipeline_retry_base_delay_seconds: Delay before the first retry;
+            doubles each subsequent attempt.
     """
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -53,6 +61,10 @@ class Settings(BaseSettings):
     session_cookie_secure: bool = False
     cors_allowed_origins: str = "http://localhost:8080"
     log_level: str = "INFO"
+    log_max_bytes: int = 10_000_000
+    log_backup_count: int = 5
+    pipeline_retry_max_attempts: int = 3
+    pipeline_retry_base_delay_seconds: float = 1.0
 
     @property
     def cors_allowed_origins_list(self) -> list[str]:

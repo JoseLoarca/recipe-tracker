@@ -60,7 +60,12 @@ def lookup_food_macros(query: str) -> tuple[float, float, float, float] | None:
         return response
 
     try:
-        response = retry_with_backoff(attempt, retry_on=httpx.TransportError)
+        response = retry_with_backoff(
+            attempt,
+            max_attempts=settings.pipeline_retry_max_attempts,
+            base_delay_seconds=settings.pipeline_retry_base_delay_seconds,
+            retry_on=httpx.TransportError,
+        )
     except httpx.HTTPError as exc:
         logger.warning("USDA lookup failed", extra={"query": query, "error": str(exc)})
         return None

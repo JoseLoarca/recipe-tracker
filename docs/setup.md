@@ -41,6 +41,7 @@ docker compose ps   # confirm all services are healthy
 1. Open a chat with your bot on Telegram and send `/start`.
 2. The bot registers you automatically and asks whether to create a new household or join one with an invite code.
 3. To share recipes with someone else (e.g. a partner), have them message the same bot and use the invite code you generate with `/invite`.
+4. Send `/leave_household` at any time to leave — any of your own recipes shared with the household immediately revert to personal.
 
 ## 5. Log into the web UI
 

@@ -5,11 +5,13 @@ from app.core.exceptions import (
     CodeAlreadyConsumedError,
     CodeExpiredError,
     InvalidCodeError,
+    NoHouseholdError,
 )
 from bot.handlers.household import (
     handle_create_household,
     handle_invite,
     handle_join_household,
+    handle_leave_household,
 )
 
 
@@ -215,3 +217,41 @@ class TestHandleInvite:
 
         _, kwargs = context.bot.send_message.call_args
         assert "XYZ789" in kwargs["text"]
+
+
+class TestHandleLeaveHousehold:
+    @patch("bot.handlers.household.leave_household")
+    @patch("bot.handlers.household.get_or_create_user")
+    @patch("bot.handlers.household.SessionLocal")
+    async def test_leaves_the_household(
+        self,
+        mock_session_local: MagicMock,
+        mock_get_or_create_user: MagicMock,
+        mock_leave_household: MagicMock,
+    ) -> None:
+        mock_get_or_create_user.return_value = (MagicMock(), False)
+        update, context = _make_update(), _make_context()
+
+        await handle_leave_household(update, context)
+
+        mock_leave_household.assert_called_once()
+        _, kwargs = context.bot.send_message.call_args
+        assert "left your household" in kwargs["text"]
+
+    @patch("bot.handlers.household.leave_household")
+    @patch("bot.handlers.household.get_or_create_user")
+    @patch("bot.handlers.household.SessionLocal")
+    async def test_rejects_a_user_with_no_household(
+        self,
+        mock_session_local: MagicMock,
+        mock_get_or_create_user: MagicMock,
+        mock_leave_household: MagicMock,
+    ) -> None:
+        mock_get_or_create_user.return_value = (MagicMock(), False)
+        mock_leave_household.side_effect = NoHouseholdError("no household")
+        update, context = _make_update(), _make_context()
+
+        await handle_leave_household(update, context)
+
+        _, kwargs = context.bot.send_message.call_args
+        assert "not in a household" in kwargs["text"]
