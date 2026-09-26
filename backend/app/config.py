@@ -1,0 +1,86 @@
+"""Application configuration, loaded from the environment / ``.env``."""
+
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """All instance-specific configuration, sourced from environment variables.
+
+    See ``.env.example`` at the repo root for the full list with explanations.
+
+    Attributes:
+        database_url: SQLAlchemy connection string for Postgres.
+        redis_url: Connection string for the Celery broker/result backend.
+        ollama_base_url: Where the worker reaches the host-native Ollama
+            instance (see docs/adr/0004).
+        ollama_model: Which local model to use for recipe extraction and
+            macro estimation.
+        whisper_model_size: Which faster-whisper model size to load for
+            transcription (e.g. ``"base"``, ``"small"``) — bigger is more
+            accurate but slower and more memory-hungry.
+        telegram_bot_token: This instance's bot token, from @BotFather.
+        usda_api_key: API key for USDA FoodData Central macro lookups.
+        frontend_base_url: Where the web UI is served from, used to build
+            recipe links in the bot's completion notifications.
+        session_cookie_name: Name of the web UI's session cookie.
+        session_cookie_secure: Whether the session cookie requires HTTPS.
+            Off by default: this stack serves plain HTTP with no TLS
+            termination out of the box (see docs/setup.md). Flip to true
+            only once you've put HTTPS in front of it (e.g. a reverse
+            proxy or Tailscale HTTPS) — otherwise browsers silently drop
+            the cookie and login appears broken.
+        cors_allowed_origins: Where the frontend is served from, so the
+            browser will allow it to call this API with credentials
+            (cookies). Comma-separated for more than one origin.
+        log_level: Root logger level (e.g. ``"INFO"``, ``"DEBUG"``).
+        log_max_bytes: Rotate ``logs/pipeline.log`` once it reaches this size.
+        log_backup_count: How many rotated log files to keep before the
+            oldest is deleted.
+        pipeline_retry_max_attempts: Total attempts (including the first)
+            for the pipeline's transient stages (download, USDA lookup)
+            before giving up — see `app.core.retry`.
+        pipeline_retry_base_delay_seconds: Delay before the first retry;
+            doubles each subsequent attempt.
+    """
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    database_url: str = (
+        "postgresql+psycopg://recipe_tracker:recipe_tracker@postgres:5432/recipe_tracker"
+    )
+    redis_url: str = "redis://redis:6379/0"
+    ollama_base_url: str = "http://host.docker.internal:11434"
+    ollama_model: str = "gemma4:e4b-mlx"
+    whisper_model_size: str = "base"
+    telegram_bot_token: str = ""
+    usda_api_key: str = ""
+    frontend_base_url: str = "http://localhost:8080"
+    session_cookie_name: str = "recipe_tracker_session"
+    session_cookie_secure: bool = False
+    cors_allowed_origins: str = "http://localhost:8080"
+    log_level: str = "INFO"
+    log_max_bytes: int = 10_000_000
+    log_backup_count: int = 5
+    pipeline_retry_max_attempts: int = 3
+    pipeline_retry_base_delay_seconds: float = 1.0
+
+    @property
+    def cors_allowed_origins_list(self) -> list[str]:
+        """Parse ``cors_allowed_origins`` into a list for CORSMiddleware.
+
+        Returns:
+            The configured origins, split on commas and trimmed.
+        """
+        return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Return the process-wide `Settings` instance, loaded once and cached.
+
+    Returns:
+        The application settings, populated from the environment.
+    """
+    return Settings()
